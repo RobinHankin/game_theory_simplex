@@ -1,0 +1,88 @@
+# This file gives an example of using minmax() to identify strategies.
+# Function minmax() is defined in canonical.R
+
+
+structure(c(0, 0.8975, 0.64675, 0.30792, 0.81106, 0.58364, 0.26738, 
+ 0.41119, -0.8975, 0, 0.52241, 0.12669, 0.78506, 0.42664, 0.0745, 
+ 0.22099, -0.64675, -0.52241, 0, -0.08273, 0.219965, 0.533725, 
+ -0.14271, 0.242845, -0.30792, -0.12669, 0.08273, 0, 0.0295, 0.540185, 
+ 0.237275, 0.547, -0.81106, -0.78506, -0.219965, -0.0295, 0, 0.31606, 
+ -0.09121, -0.00478, -0.58364, -0.42664, -0.533725, -0.540185, 
+ -0.31606, 0, -0.301925, 0.05569, -0.26738, -0.0745, 0.14271, 
+ -0.237275, 0.09121, 0.301925, 0, 0.336845, -0.41119, -0.22099, 
+ -0.242845, -0.547, 0.00478, -0.05569, -0.336845, 0), .Dim = c(8L, 
+ 8L), .Dimnames = structure(list(player_I = c("[700]", "[610]", 
+ "[520]", "[430]", "[511]", "[421]", "[331]", "[322]"), player_II = c("[700]", 
+ "[610]", "[520]", "[430]", "[511]", "[421]", "[331]", "[322]"
+ )), .Names = c("player_I", "player_II"))) -> A
+
+
+# matrix A is antisymmetric so we know the game value is zero.
+#
+
+
+# But exactly antisymmetric matrices bugger things up:
+
+
+> minmax(A)
+$probs
+    [700]     [610]     [520]     [430]     [511]     [421]     [331]     [322] 
+0.0000000 0.0000000 0.0000000 0.0000000 0.0000000 0.1605981 0.0000000 0.8394019 
+
+$value
+[1] 0.04674629
+
+> 
+
+#This can't be right because the value of 0.04674629 is out by miles.
+#It should be zero exactly.  You can see what has gone wrong by
+#executing minmax(A,give=TRUE) and seeing that constraint #5 (amongst
+#others) has massive numerical problems; the solver has gone berserk.
+
+# So we need to add a little bit to A.  If d is a (small) scalar, then
+  A+d is the payoff matrix of a game where payoffs to A are increased
+  by 'd' each play.
+
+How much should 'd' be?  The minimum # positive value of A is A[5,8]=
+-A[8,5] = 0.00478.  I *think* tht adding more than this spoils von
+Neumann's proof, so we shouldn't do it.  Adding less than this is OK:
+
+
+> 
+> minmax(A+0.001)
+$probs
+     [700]      [610]      [520]      [430]      [511]      [421]      [331] 
+0.00000000 0.00000000 0.00000000 0.00000000 0.14790322 0.01269487 0.00000000 
+     [322] 
+0.83940191 
+
+$value
+[1] 0.001
+
+> minmax(A+0.0001)
+$probs
+     [700]      [610]      [520]      [430]      [511]      [421]      [331] 
+0.00000000 0.00000000 0.00000000 0.00000000 0.14790322 0.01269487 0.00000000 
+     [322] 
+0.83940191 
+
+$value
+[1] 1e-04
+
+> minmax(A+0.00001)
+$probs
+     [700]      [610]      [520]      [430]      [511]      [421]      [331] 
+0.00000000 0.00000000 0.00000000 0.00000000 0.14790322 0.01269487 0.00000000 
+     [322] 
+0.83940191 
+
+$value
+[1] 1e-05
+
+>
+
+# See how the 'value' [that is, game value, the second element of the
+# list] is pretty much equal to the offset. This is a Good Thing,
+# because if we subtract the offset we get back to the original
+# zero-sum game.  Also see how the mixed strategies are unchanged when
+# the offset moves about.
