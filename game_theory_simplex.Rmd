@@ -1,0 +1,84 @@
+---
+title: "Zero-sum game theory in R"
+author: "Robin KS Hankin"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+set.seed(1)
+knitr::opts_chunk$set(echo = TRUE)
+options(digits=5)
+```
+
+
+Here we use Ferguson's equations 16 and 17 with an offset to solve the
+minmax problem.
+
+
+The thing to be optimized is c(v,p1,p2,...,pn)
+
+```{r}
+require("linprog")
+
+`minmax` <- function(A,give=FALSE){
+    n <- dim(A)[1]
+    out <-
+        solveLP(cvec=rep(1,n),bvec=rep(1,n),Amat=t(A),const.dir=rep(">=",n),maximum=FALSE)
+    if(give){
+        return(out)
+    } else {
+        jj <- out$solution
+        value <- 1/sum(jj)
+        jj <- jj/sum(jj)
+        names(jj) <- rownames(A)
+        return(list(probs=jj,value=value))
+    }
+}
+
+
+```{r}
+A <- structure(c(0, 0.8975, 0.64675, 0.30792, 0.81106, 0.58364, 0.26738, 
+ 0.41119, -0.8975, 0, 0.52241, 0.12669, 0.78506, 0.42664, 0.0745, 
+ 0.22099, -0.64675, -0.52241, 0, -0.08273, 0.219965, 0.533725, 
+ -0.14271, 0.242845, -0.30792, -0.12669, 0.08273, 0, 0.0295, 0.540185, 
+ 0.237275, 0.547, -0.81106, -0.78506, -0.219965, -0.0295, 0, 0.31606, 
+ -0.09121, -0.00478, -0.58364, -0.42664, -0.533725, -0.540185, 
+ -0.31606, 0, -0.301925, 0.05569, -0.26738, -0.0745, 0.14271, 
+ -0.237275, 0.09121, 0.301925, 0, 0.336845, -0.41119, -0.22099, 
+ -0.242845, -0.547, 0.00478, -0.05569, -0.336845, 0), .Dim = c(8L, 
+ 8L), .Dimnames = structure(list(player_I = c("[700]", "[610]", 
+ "[520]", "[430]", "[511]", "[421]", "[331]", "[322]"), player_II = c("[700]", 
+ "[610]", "[520]", "[430]", "[511]", "[421]", "[331]", "[322]"
+ )), .Names = c("player_I", "player_II")))
+ A
+ ```
+
+
+matrix A is antisymmetric so we know the game value is zero.  However,
+exactly antisymmetric matrices suffer from identifiability problems:
+
+
+
+```{r}
+minmax(A)
+```
+
+This can't be right because the value of 0.04674629 is out by miles.
+It should be zero exactly.  You can see what has gone wrong by
+executing `minmax(A,give=TRUE)` and seeing that constraint 5 (amongst
+others) has massive numerical problems; the solver has gone berserk.
+
+So we need to add a little bit to `A`.  How much?  The minimum
+positive value of `A` is `A[5,8]= -A[8,5] = 0.00478`.  I am not sure
+but I think that adding more than this is not advisable.  Adding less
+than this is OK,  we will try $10^{-3}$:
+
+
+
+```{r}
+minmax(A+0.001)
+```
+
+ See how the 'value' [that is, the second element of the list] is
+ equal to the offset.  This is a Good Thing.  Also see how
+ the mixed strategies are unchanged when the offset moves about.
