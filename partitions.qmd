@@ -1,0 +1,154 @@
+---
+title: "Some discrete Colonel Blotto-type games with the `partitions` R package"
+---
+
+# Colonel Blotto
+
+
+```{r,label=loadlinprog,echo=FALSE}
+suppressMessages(library("linprog"))
+
+minmax <- function(A,give=FALSE){
+    n <- dim(A)[1]
+    out <-
+        solveLP(cvec=rep(1,n),bvec=rep(1,n),Amat=t(A),const.dir=rep(">=",n),maximum=FALSE)
+    if(give){
+        return(out)
+    } else {
+        jj <- out$solution
+        value <- 1/sum(jj)
+        jj <- jj/sum(jj)
+        names(jj) <- rownames(A)
+        return(list(probs=jj,value=value))
+    }
+}
+```
+
+Start with a simple case in which players I and II are required to
+play a total of 7 counters in three rounds in a nonincreasing order.
+Payoff to player I is the number of rounds which strictly exceed that
+of player II.  The strategy space is given by `restrictedparts()`:
+
+
+```{r label=definestrategyspace}
+library("partitions")
+x <- restrictedparts(7,3)
+x
+```
+
+The payoff matrix is simply `sum(I > II)`:
+
+```{r label=defineAusingpartitions}
+M <- apply(x,2,function(p){apply(x,2,function(q){sum(p>q)})})
+jj <-  paste("[",apply(x,2,paste,collapse=""),"]",sep="")
+
+dimnames(M) <- list(player_I=jj,player_II=jj)
+M
+minmax(M)
+```
+
+Above we see that the only active strategies are `[322]`, `[430]` and
+`[511]`.  Interestingly we have a cyclic dominance here, rock-paper-scissors:
+
+
+```{r, label=rockpaperscissors, engine = 'tikz',echo=FALSE}
+\begin{tikzpicture}[node distance=2cm]
+
+\node (A) at (-1, 0    ) {[511]};
+\node (B) at ( 1, 0    ) {[430]};
+\node (C) at ( 0, 1.732) {[322]};
+
+\draw [->] (A) edge (B);
+\draw [->] (B) edge (C);
+\draw [->] (C) edge (A);
+
+\end{tikzpicture}
+```
+
+
+Or
+
+```{r}
+jj <- c(4,5,8)
+M[jj,jj]
+```
+
+We might drop the requirement for nonincreasing allocations:
+
+```{r}
+x <- compositions(7,3)
+summary(x)
+M <- apply(x,2,function(p){apply(x,2,function(q){sum(p>q)})})
+jj <-  paste("[",apply(x,2,paste,collapse=""),"]",sep="")
+
+dimnames(M) <- list(player_I=jj,player_II=jj)
+table(M)
+M[1:7,1:7]
+minmax(M+0.01)
+minmax(M+0.001)
+minmax(M+0.0001)
+minmax(M+0.00001)
+```
+
+But above we see that the optimization routine is not converging nicely.
+
+
+# Liability allocation game
+
+```{r, label=defineA}
+A <- 
+structure(c(0, 0.8975, 0.64675, 0.30792, 0.81106, 0.58364, 0.26738, 
+ 0.41119, -0.8975, 0, 0.52241, 0.12669, 0.78506, 0.42664, 0.0745, 
+ 0.22099, -0.64675, -0.52241, 0, -0.08273, 0.219965, 0.533725, 
+ -0.14271, 0.242845, -0.30792, -0.12669, 0.08273, 0, 0.0295, 0.540185, 
+ 0.237275, 0.547, -0.81106, -0.78506, -0.219965, -0.0295, 0, 0.31606, 
+ -0.09121, -0.00478, -0.58364, -0.42664, -0.533725, -0.540185, 
+ -0.31606, 0, -0.301925, 0.05569, -0.26738, -0.0745, 0.14271, 
+ -0.237275, 0.09121, 0.301925, 0, 0.336845, -0.41119, -0.22099, 
+ -0.242845, -0.547, 0.00478, -0.05569, -0.336845, 0), .Dim = c(8L, 
+ 8L), .Dimnames = structure(list(player_I = c("[700]", "[610]", 
+ "[520]", "[430]", "[511]", "[421]", "[331]", "[322]"), player_II = c("[700]", 
+ "[610]", "[520]", "[430]", "[511]", "[421]", "[331]", "[322]"
+ )), .Names = c("player_I", "player_II"))) -> A
+round(A,3)
+```
+
+The game values in matrix $A$ are from the liability allocation game
+paper.
+
+
+
+
+Matrix A is antisymmetric so we know the game value is zero.  But
+exactly antisymmetric matrices bugger things up:
+
+```{r,label=loadlinprog2}
+minmax(A)
+```
+
+This can't be right because the value of 0.04674629 is out by miles.
+It should be zero exactly.  You can see what has gone wrong by
+executing minmax(A,give=TRUE) and seeing that constraint number 5
+(amongst others) has massive numerical problems; the solver has gone
+berserk.
+
+So we need to add a little bit to matrix $A$.  If $d$ is a (small)
+scalar, then $A+d$ is the payoff matrix of a game where payoffs to A
+are increased by $d$ each play.
+
+How much should $d$ be?  The minimum positive value of A is `A[5,8]=
+-A[8,5] = 0.00478`.  I *think* tht adding more than this spoils von
+Neumann's proof, so we shouldn't do it.  Adding less than this is OK:
+
+
+```{r}
+ minmax(A+0.001)
+ minmax(A+0.0001)
+ minmax(A+0.00001)
+```
+
+ See how the 'value' [that is, game value, the second element of the
+ list] is pretty much equal to the offset. This is a Good Thing,
+ because if we subtract the offset we get back to the original
+ zero-sum game.  Also see how the mixed strategies are unchanged when
+ the offset moves about.
