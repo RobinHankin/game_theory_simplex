@@ -26,8 +26,9 @@ minmax <- function(A,give=FALSE){
 
 Start with a simple case in which players I and II are required to
 play a total of 7 counters in three rounds in a nonincreasing order.
-Payoff to player I is the number of rounds which strictly exceed that
-of player II.  The strategy space is given by `restrictedparts()`:
+The payoff to player I is the number of rounds which strictly exceed
+that of player II.  The strategy space is given by
+`restrictedparts()`:
 
 
 ```{r label=definestrategyspace}
