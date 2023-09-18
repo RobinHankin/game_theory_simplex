@@ -37,44 +37,19 @@ x <- restrictedparts(7,3)
 x
 ```
 
-The payoff matrix is simply `sum(I > II)`:
+The payoff matrix is simply `sum(I > II) - sum(I<II)`:
 
 ```{r label=defineAusingpartitions}
-M <- apply(x,2,function(p){apply(x,2,function(q){sum(p>q)})})
+M <- apply(x,2,function(p){apply(x,2,function(q){sum(p<q)-sum(p>q)})})
 jj <-  paste("[",apply(x,2,paste,collapse=""),"]",sep="")
-
 dimnames(M) <- list(player_I=jj,player_II=jj)
 M
 minmax(M)
 ```
 
-Above we see that the only active strategies are `[322]`, `[430]` and
-`[511]`.  Interestingly we have a cyclic dominance here, rock-paper-scissors:
-
-
-```{r, label=rockpaperscissors, engine = 'tikz',echo=FALSE}
-\begin{tikzpicture}[node distance=2cm]
-
-\node (A) at (-1, 0    ) {[511]};
-\node (B) at ( 1, 0    ) {[430]};
-\node (C) at ( 0, 1.732) {[322]};
-
-\draw [->] (A) edge (B);
-\draw [->] (B) edge (C);
-\draw [->] (C) edge (A);
-
-\end{tikzpicture}
-```
-
-
-Or
-
-```{r}
-jj <- c(4,5,8)
-M[jj,jj]
-```
-
-We might drop the requirement for nonincreasing allocations:
+Above we see that the only active strategy is `[331]` as this is the
+unique strategy that either wins or draws against any other play.  We
+might drop the requirement for nonincreasing allocations:
 
 ```{r}
 x <- compositions(7,3)
@@ -146,6 +121,7 @@ Neumann's proof, so we shouldn't do it.  Adding less than this is OK:
  minmax(A+0.001)
  minmax(A+0.0001)
  minmax(A+0.00001)
+ minmax(A+10)
 ```
 
  See how the 'value' [that is, game value, the second element of the
