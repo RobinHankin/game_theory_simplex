@@ -54,16 +54,16 @@ might drop the requirement for nonincreasing allocations:
 ```{r}
 x <- compositions(7,3)
 summary(x)
-M <- apply(x,2,function(p){apply(x,2,function(q){sum(p>q)})})
+M <- apply(x,2,function(p){apply(x,2,function(q){sum(p<q)-sum(p>q)})})
 jj <-  paste("[",apply(x,2,paste,collapse=""),"]",sep="")
 
 dimnames(M) <- list(player_I=jj,player_II=jj)
 table(M)
-M[1:7,1:7]
+dim(M)
+M[20:27,20:27]
 minmax(M+0.01)
 minmax(M+0.001)
 minmax(M+0.0001)
-minmax(M+0.00001)
 ```
 
 But above we see that the optimization routine is not converging nicely.
