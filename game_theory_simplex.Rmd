@@ -1,6 +1,6 @@
 ---
 title: "Zero-sum game theory in R"
-author: "Robin KS Hankin"
+author: "Robin K. S. Hankin"
 output: html_document
 ---
 
@@ -18,7 +18,7 @@ minmax problem.
 The thing to be optimized is c(v,p1,p2,...,pn)
 
 ```{r}
-require("linprog")
+library("linprog")
 
 `minmax` <- function(A,give=FALSE){
     n <- dim(A)[1]
@@ -51,7 +51,7 @@ A <- structure(c(0, 0.8975, 0.64675, 0.30792, 0.81106, 0.58364, 0.26738,
  "[610]", "[520]", "[430]", "[511]", "[421]", "[331]", "[322]"
  )), .Names = c("player_I", "player_II")))
  A
- ```
+```
 
 
 matrix A is antisymmetric so we know the game value is zero.  However,
